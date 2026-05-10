@@ -74,8 +74,11 @@ export const BrowsePanel: FC<Props> = ({ onQueryResult, onScheduleClick }) => {
     setLoading(true);
     setStep("result");
     try {
+      // 用楼栋显示名代替原始 key（"4" → "4号楼"），让解析器能识别
+      const bld = buildings.find((b) => b.name === selectedBuilding);
+      const bldName = bld?.display_name || selectedBuilding;
       const data = await localSendChatMessage(
-        `${selectedCampus} ${selectedBuilding} ${roomName} ${selectedDay} 有空吗`
+        `${selectedCampus} ${bldName} ${roomName} ${selectedDay} 有空吗`
       );
       const groups = groupRooms(data.rooms);
       const summary = `[${selectedCampus}] ${roomName} · ${selectedDay}`;
