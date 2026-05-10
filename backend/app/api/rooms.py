@@ -106,6 +106,90 @@ async def get_room_schedule(room_name: str, campus: str = Query(None)):
     }
 
 
+@router.get("/rooms/{room_name}/free")
+async def check_room_free(
+    room_name: str,
+    campus: str = Query(None),
+    day: str = Query(None, description="星期，默认今天"),
+    period: str = Query("0102,0304,0506,0708,0910", description="节次，多个用逗号分隔"),
+):
+    """查单个教室在指定时间是否空闲"""
+    from datetime import datetime
+    WEEKDAY_CN = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"]
+    if day is None:
+        day = WEEKDAY_CN[(datetime.now().weekday() + 1) % 7]
+
+    data = _load_data()
+    period_slots = period.split(",")
+
+    free_slots = []
+    for r in data:
+        if r["room_name"] != room_name:
+            continue
+        if campus and r["campus"] != campus:
+            continue
+        if r["day_of_week"] != day:
+            continue
+        if r["period_slot"] in period_slots:
+            free_slots.append(r["period_slot"])
+
+    return {
+        "code": 0,
+        "data": {
+            "room_name": room_name,
+            "campus": campus or "",
+            "day": day,
+            "free": len(free_slots) > 0,
+            "free_slots": sorted(free_slots),
+            "occupied_slots": [s for s in period_slots if s not in free_slots],
+        },
+    }
+
+
+@router.get("/rooms/{room_name}/free-now")
+async def check_room_free_now(room_name: str, campus: str = Query(None)):
+    """查单个教室此时此刻是否空闲"""
+    from datetime import datetime
+    WEEKDAY_CN = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"]
+    day = WEEKDAY_CN[(datetime.now().weekday() + 1) % 7]
+
+    h, m = datetime.now().hour, datetime.now().minute
+    total = h * 60 + m
+
+    now_slots = []
+    if 8 * 60 + 30 <= total < 10 * 60 + 0: now_slots = ["0102"]
+    elif 10 * 60 + 0 <= total < 10 * 60 + 20: now_slots = ["0102", "0304"]
+    elif 10 * 60 + 20 <= total < 11 * 60 + 50: now_slots = ["0304"]
+    elif 14 * 60 + 0 <= total < 15 * 60 + 30: now_slots = ["0506"]
+    elif 15 * 60 + 30 <= total < 15 * 60 + 50: now_slots = ["0506", "0708"]
+    elif 15 * 60 + 50 <= total < 17 * 60 + 20: now_slots = ["0708"]
+    elif 18 * 60 + 40 <= total < 20 * 60 + 10: now_slots = ["0910"]
+
+    if not now_slots:
+        return {"code": 0, "data": {"room_name": room_name, "free": False, "reason": "当前非上课时间"}}
+
+    period = ",".join(now_slots)
+    data = _load_data()
+    free_slots = []
+    for r in data:
+        if r["room_name"] != room_name: continue
+        if campus and r["campus"] != campus: continue
+        if r["day_of_week"] != day: continue
+        if r["period_slot"] in now_slots:
+            free_slots.append(r["period_slot"])
+
+    return {
+        "code": 0,
+        "data": {
+            "room_name": room_name,
+            "campus": campus or "",
+            "day": day,
+            "free": len(free_slots) > 0,
+            "free_slots": sorted(free_slots),
+        },
+    }
+
+
 @router.get("/status")
 async def api_status():
     """API 状态"""
