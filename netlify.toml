@@ -1,13 +1,8 @@
 # Netlify 部署配置 — 山财空教室 AI 狙击手
 [build]
-  base = "frontend"
-  publish = "dist"
-  command = "npm run build"
-
-[functions]
-  directory = "../netlify/functions"
-  # Python 函数配置
-  node_bundler = "none"
+  command = "cd frontend && npm run build"
+  publish = "frontend/dist"
+  functions = "netlify/functions"
 
 # API 请求 → 后端函数
 [[redirects]]
