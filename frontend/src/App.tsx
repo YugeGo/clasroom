@@ -6,10 +6,11 @@ import { ChatBubble } from "./components/ChatBubble";
 import { ChatInput } from "./components/ChatInput";
 import { BrowsePanel } from "./components/BrowsePanel";
 import { ScheduleModal } from "./components/ScheduleModal";
+import { NowDrawer } from "./components/NowDrawer";
 import { useChatStore, useCurrentSession } from "./store/chatStore";
 import { groupRooms } from "./api/chat";
 import { localSendChatMessageAI } from "./api/local-engine";
-import { Sun, Moon, Search, Sparkles } from "lucide-react";
+import { Sun, Moon, Search, Sparkles, Clock } from "lucide-react";
 
 type Mode = "chat" | "browse";
 
@@ -27,6 +28,8 @@ const App: FC = () => {
 
   // 周课表弹窗状态
   const [scheduleRoom, setScheduleRoom] = useState<{ roomName: string; campus: string } | null>(null);
+  // 现在有空抽屉
+  const [showNowDrawer, setShowNowDrawer] = useState(false);
 
   const currentSession = useCurrentSession();
   const addMessage = useChatStore((s) => s.addMessage);
@@ -190,6 +193,16 @@ const App: FC = () => {
 
             {/* 输入区域 */}
             <div className="shrink-0">
+              {/* 现在有空按钮 */}
+              <div className="px-4 pb-1">
+                <button
+                  onClick={() => setShowNowDrawer(true)}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm font-medium hover:from-blue-600 hover:to-blue-700 active:scale-[0.98] transition-all shadow-lg shadow-blue-500/25"
+                >
+                  <Clock size={16} />
+                  现在有空教室吗
+                </button>
+              </div>
               <ChatInput onSend={handleSend} disabled={isStreaming} />
             </div>
           </>
@@ -209,6 +222,11 @@ const App: FC = () => {
           campus={scheduleRoom.campus}
           onClose={() => setScheduleRoom(null)}
         />
+      )}
+
+      {/* 现在有空抽屉 */}
+      {showNowDrawer && (
+        <NowDrawer onClose={() => setShowNowDrawer(false)} />
       )}
     </div>
   );
