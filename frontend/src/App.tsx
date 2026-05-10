@@ -124,7 +124,7 @@ const App: FC = () => {
             <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-zinc-800 flex items-center justify-center border border-gray-200/80 dark:border-zinc-700/50 shadow-sm transition-colors duration-300">
               <Search size={16} className="text-blue-500 dark:text-zinc-300" />
             </div>
-            <h1 className="font-semibold text-gray-900 dark:text-zinc-100 text-[15px] tracking-tight hidden sm:block">空教室狙击手</h1>
+            <h1 className="font-semibold text-gray-900 dark:text-zinc-100 text-[15px] tracking-tight hidden sm:block">山财自习通</h1>
           </div>
 
           {/* 模式标签 */}

@@ -269,10 +269,9 @@ export function fetchRoomSchedule(data: RoomSlot[], roomName: string, campus: st
   return { room_name: roomName, campus, days };
 }
 
-// ─── Phase 1 & 4: DeepSeek AI（浏览器直连，无需后端） ───
+// ─── Phase 1 & 4: DeepSeek AI（通过 Netlify Function 代理） ───
 
-const DEEPSEEK_API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY as string | undefined;
-const _aiAvailable = !!DEEPSEEK_API_KEY;
+const AI_ENABLED = true; // 代理始终可用，没 Key 会返回 fallback
 
 const AI_SYSTEM_PROMPT = () => {
   const now = new Date();
@@ -292,27 +291,22 @@ const AI_SYSTEM_PROMPT = () => {
 };
 
 export function isAIAvailable(): boolean {
-  return _aiAvailable;
+  return AI_ENABLED;
 }
 
-async function callDeepSeekDirect(messages: { role: string; content: string }[], jsonMode: boolean): Promise<string | null> {
-  if (!DEEPSEEK_API_KEY) return null;
+async function callDeepSeekProxy(messages: { role: string; content: string }[], jsonMode: boolean): Promise<string | null> {
   try {
-    const resp = await fetch("https://api.deepseek.com/chat/completions", {
+    const resp = await fetch("/api/deepseek", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${DEEPSEEK_API_KEY}`,
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "deepseek-chat",
         messages,
         response_format: jsonMode ? { type: "json_object" } : undefined,
         temperature: jsonMode ? 0.1 : 0.7,
-        max_tokens: 512,
       }),
     });
     const data = await resp.json();
+    if (data.fallback) return null;
     return data.choices?.[0]?.message?.content ?? null;
   } catch {
     return null;
@@ -320,7 +314,7 @@ async function callDeepSeekDirect(messages: { role: string; content: string }[],
 }
 
 export async function callDeepSeekParse(message: string): Promise<any | null> {
-  const content = await callDeepSeekDirect(
+  const content = await callDeepSeekProxy(
     [
       { role: "system", content: AI_SYSTEM_PROMPT() },
       { role: "user", content: message },
@@ -336,7 +330,7 @@ export async function callDeepSeekParse(message: string): Promise<any | null> {
 }
 
 export async function callDeepSeekSummary(message: string, context: string): Promise<string | null> {
-  return callDeepSeekDirect(
+  return callDeepSeekProxy(
     [
       { role: "system", content: "你是一个山财空教室助手。用一段自然语言总结查询结果，要友好简洁有温度。" },
       { role: "user", content: `用户问题：${message}\n\n查询结果：${context}` },

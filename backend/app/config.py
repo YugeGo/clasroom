@@ -8,7 +8,7 @@ from typing import Optional
 
 class Settings(BaseSettings):
     # ─── 服务配置 ───
-    APP_NAME: str = "Campus Room AI Sniper"
+    APP_NAME: str = "山财自习通"
     DEBUG: bool = True
     MOCK_MODE: bool = True   # True=无需数据库和 API Key，返回示例数据
 
