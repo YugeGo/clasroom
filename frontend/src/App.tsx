@@ -101,13 +101,8 @@ const App: FC = () => {
     [currentSession, addMessage, updateLastMessage, setStreaming]
   );
 
-  const handleBrowseResult = useCallback(
-    (groups: any[], summary: string) => {
-      if (!currentSession) return;
-      addMessage({ type: "result", content: summary, groups });
-    },
-    [currentSession, addMessage]
-  );
+  // 浏览模式结果留在浏览面板内，不推到对话
+  const handleBrowseResult = useCallback(() => {}, []);
 
   const handleScheduleClick = useCallback((roomName: string, campus: string) => {
     setScheduleRoom({ roomName, campus });
@@ -194,7 +189,7 @@ const App: FC = () => {
         ) : (
           <div className="flex-1 overflow-y-auto px-4 py-8">
             <div className="max-w-4xl mx-auto">
-              <BrowsePanel onQueryResult={handleBrowseResult} />
+              <BrowsePanel onQueryResult={handleBrowseResult} onScheduleClick={handleScheduleClick} />
             </div>
           </div>
         )}

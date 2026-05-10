@@ -200,9 +200,11 @@ export async function localSendChatMessage(message: string) {
     if (v !== null) cleanParams[k] = v;
   }
 
+  const uniqueCount = new Set(rooms.map((r) => r.room_name)).size;
+
   return {
     params: cleanParams,
-    count: rooms.length,
+    count: uniqueCount,
     rooms: rooms.map((r) => ({
       campus: r.campus,
       room_name: r.room_name,
@@ -350,9 +352,11 @@ export async function localSendChatMessageAI(message: string) {
     summary = await callDeepSeekSummary(message, context);
   }
 
+  const uniqueCount = new Set(rooms.map((r) => r.room_name)).size;
+
   return {
     params: cleanParams,
-    count: rooms.length,
+    count: uniqueCount,
     rooms: rooms.map((r) => ({
       campus: r.campus, room_name: r.room_name,
       day_of_week: r.day_of_week, period_slot: r.period_slot,

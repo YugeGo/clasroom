@@ -17,11 +17,12 @@ import { RoomCard } from "./RoomCard";
 
 interface Props {
   onQueryResult: (groups: any[], summary: string) => void;
+  onScheduleClick?: (roomName: string, campus: string) => void;
 }
 
 type Step = "campus" | "building" | "room" | "result";
 
-export const BrowsePanel: FC<Props> = ({ onQueryResult }) => {
+export const BrowsePanel: FC<Props> = ({ onQueryResult, onScheduleClick }) => {
   const [step, setStep] = useState<Step>("campus");
   const [campuses, setCampuses] = useState<any[]>([]);
   const [buildings, setBuildings] = useState<any[]>([]);
@@ -241,7 +242,7 @@ export const BrowsePanel: FC<Props> = ({ onQueryResult }) => {
               {resultGroups.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {resultGroups.map((room) => (
-                    <RoomCard key={`${room.campus}-${room.room_name}`} room={room} />
+                    <RoomCard key={`${room.campus}-${room.room_name}`} room={room} onScheduleClick={onScheduleClick} />
                   ))}
                 </div>
               ) : (
