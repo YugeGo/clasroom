@@ -105,7 +105,7 @@ const App: FC = () => {
   );
 
   return (
-    <div className="flex h-screen overflow-hidden transition-colors duration-300 bg-[#f5f5f7] dark:bg-[#09090b] text-gray-900 dark:text-zinc-300">
+    <div className="flex h-screen h-dvh overflow-hidden transition-colors duration-300 bg-[#f5f5f7] dark:bg-[#09090b] text-gray-900 dark:text-zinc-300">
       {/* 背景装饰 - 更柔和的高级感渐变 */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-500/[0.05] dark:bg-blue-500/[0.03] blur-[100px]" />
