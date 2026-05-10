@@ -1,0 +1,22 @@
+# Netlify 部署配置 — 山财空教室 AI 狙击手
+[build]
+  base = "frontend"
+  publish = "dist"
+  command = "npm run build"
+
+[functions]
+  directory = "../netlify/functions"
+  # Python 函数配置
+  node_bundler = "none"
+
+# API 请求 → 后端函数
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api"
+  status = 200
+
+# SPA 路由（必须放在最后）
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
