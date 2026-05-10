@@ -11,7 +11,8 @@ import {
   Clock,
   Loader2,
 } from "lucide-react";
-import { fetchCampuses, fetchBuildings, fetchRooms, sendChatMessage, groupRooms } from "../api/chat";
+import { localFetchCampuses, localFetchBuildings, localFetchRooms, localSendChatMessage } from "../api/local-engine";
+import { groupRooms } from "../api/chat";
 import { RoomCard } from "./RoomCard";
 
 interface Props {
@@ -43,13 +44,13 @@ export const BrowsePanel: FC<Props> = ({ onQueryResult }) => {
 
   useEffect(() => {
     setSelectedDay(todayCn);
-    fetchCampuses().then(setCampuses);
+    localFetchCampuses().then(setCampuses);
   }, []);
 
   const handleCampusClick = useCallback(async (name: string) => {
     setSelectedCampus(name);
     setLoading(true);
-    const blds = await fetchBuildings(name);
+    const blds = await localFetchBuildings(name);
     setBuildings(blds);
     setSelectedBuilding("");
     setSelectedRoom("");
@@ -60,7 +61,7 @@ export const BrowsePanel: FC<Props> = ({ onQueryResult }) => {
   const handleBuildingClick = useCallback(async (name: string) => {
     setSelectedBuilding(name);
     setLoading(true);
-    const rms = await fetchRooms(selectedCampus, name);
+    const rms = await localFetchRooms(selectedCampus, name);
     setRooms(rms);
     setSelectedRoom("");
     setStep("room");
@@ -72,7 +73,7 @@ export const BrowsePanel: FC<Props> = ({ onQueryResult }) => {
     setLoading(true);
     setStep("result");
     try {
-      const data = await sendChatMessage(
+      const data = await localSendChatMessage(
         `${selectedCampus} ${selectedBuilding} ${roomName} ${selectedDay} 有空吗`
       );
       const groups = groupRooms(data.rooms);

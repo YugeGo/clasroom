@@ -1,16 +1,9 @@
-# Netlify 部署配置 — 山财空教室 AI 狙击手
+# Netlify 部署配置 — 山财空教室 AI 狙击手（纯静态）
 [build]
   command = "cd frontend && npm run build"
   publish = "frontend/dist"
-  functions = "netlify/functions"
 
-# API 请求 → 后端函数
-[[redirects]]
-  from = "/api/*"
-  to = "/.netlify/functions/api"
-  status = 200
-
-# SPA 路由（必须放在最后）
+# SPA 路由支持
 [[redirects]]
   from = "/*"
   to = "/index.html"

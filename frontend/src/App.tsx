@@ -7,7 +7,8 @@ import { ChatBubble } from "./components/ChatBubble";
 import { ChatInput } from "./components/ChatInput";
 import { BrowsePanel } from "./components/BrowsePanel";
 import { useChatStore, useCurrentSession } from "./store/chatStore";
-import { sendChatMessage, groupRooms } from "./api/chat";
+import { localSendChatMessage } from "./api/local-engine";
+import { groupRooms } from "./api/chat";
 import { Sun, Moon, Search } from "lucide-react";
 
 type Mode = "chat" | "browse";
@@ -64,7 +65,7 @@ const App: FC = () => {
       }));
 
       try {
-        const data = await sendChatMessage(message);
+        const data = await localSendChatMessage(message);
         const params = data.params;
         const groups = groupRooms(data.rooms);
 
@@ -83,7 +84,7 @@ const App: FC = () => {
               : "当前时段没有找到空教室，试试换个时间或校区？";
           updateLastMessage({ type: "result", content: `${summary}\n\n${hint}`, groups: [] });
         } else {
-          updateLastMessage({ type: "result", content: summary, groups, params });
+          updateLastMessage({ type: "result", content: summary, groups, params: params as any });
         }
       } catch (err: any) {
         updateLastMessage({ type: "result", content: `出错了：${err.message}`, groups: [] });
