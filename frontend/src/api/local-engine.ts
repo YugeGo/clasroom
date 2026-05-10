@@ -39,16 +39,25 @@ function getCurrentPeriodSlots(): string[] {
   const h = new Date().getHours();
   const m = new Date().getMinutes();
   const total = h * 60 + m;
-  if (total >= 8 * 60 + 0 && total < 9 * 60 + 35) return ["0102"];
-  if (total >= 9 * 60 + 35 && total < 9 * 60 + 50) return ["0102", "0304"]; // 课间
-  if (total >= 9 * 60 + 50 && total < 11 * 60 + 25) return ["0304"];
-  if (total >= 11 * 60 + 25 && total < 13 * 60 + 30) return []; // 午休
-  if (total >= 13 * 60 + 30 && total < 15 * 60 + 5) return ["0506"];
-  if (total >= 15 * 60 + 5 && total < 15 * 60 + 20) return ["0506", "0708"]; // 课间
-  if (total >= 15 * 60 + 20 && total < 16 * 60 + 55) return ["0708"];
-  if (total >= 16 * 60 + 55 && total < 18 * 60 + 30) return []; // 晚饭
-  if (total >= 18 * 60 + 30) return ["0910"];
-  return []; // 清晨/深夜
+  // 1-2节: 08:30-10:00
+  if (total >= 8 * 60 + 30 && total < 10 * 60 + 0) return ["0102"];
+  // 课间: 10:00-10:20
+  if (total >= 10 * 60 + 0 && total < 10 * 60 + 20) return ["0102", "0304"];
+  // 3-4节: 10:20-11:50
+  if (total >= 10 * 60 + 20 && total < 11 * 60 + 50) return ["0304"];
+  // 午休: 11:50-14:00
+  if (total >= 11 * 60 + 50 && total < 14 * 60 + 0) return [];
+  // 5-6节: 14:00-15:30
+  if (total >= 14 * 60 + 0 && total < 15 * 60 + 30) return ["0506"];
+  // 课间: 15:30-15:50
+  if (total >= 15 * 60 + 30 && total < 15 * 60 + 50) return ["0506", "0708"];
+  // 7-8节: 15:50-17:20
+  if (total >= 15 * 60 + 50 && total < 17 * 60 + 20) return ["0708"];
+  // 晚饭: 17:20-18:40
+  if (total >= 17 * 60 + 20 && total < 18 * 60 + 40) return [];
+  // 9-10节: 18:40-20:10
+  if (total >= 18 * 60 + 40 && total < 20 * 60 + 10) return ["0910"];
+  return [];
 }
 
 // ─── 数据 ───
