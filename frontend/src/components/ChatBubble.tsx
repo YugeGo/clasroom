@@ -2,9 +2,10 @@
  * ChatBubble — 聊天气泡（用户 / AI / 结果卡片）
  */
 import { FC } from "react";
-import { User, Bot, Loader2 } from "lucide-react";
+import { User, Bot, Loader2, Building2 } from "lucide-react";
 import type { ChatMessage } from "../store/chatStore";
 import { RoomCard } from "./RoomCard";
+import { groupByBuilding } from "../api/chat";
 
 interface Props {
   message: ChatMessage;
@@ -56,10 +57,25 @@ export const ChatBubble: FC<Props> = ({ message, onScheduleClick }) => {
             </span>
           </div>
 
-          {/* 教室卡片列表 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-            {groups.map((room) => (
-              <RoomCard key={`${room.campus}-${room.room_name}`} room={room} onScheduleClick={onScheduleClick} />
+          {/* 教室卡片列表 — 按楼栋分组 */}
+          <div className="space-y-4 mb-4">
+            {groupByBuilding(groups).map((bg) => (
+              <div key={`${bg.campus}-${bg.building}`}>
+                <div className="flex items-center gap-2 mb-2">
+                  <Building2 size={14} className="text-gray-400 dark:text-zinc-500" />
+                  <span className="text-xs font-semibold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">
+                    {bg.building}
+                  </span>
+                  <span className="text-[11px] text-gray-400 dark:text-zinc-600 font-mono">
+                    {bg.rooms.length} 间
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {bg.rooms.map((room) => (
+                    <RoomCard key={`${room.campus}-${room.room_name}`} room={room} onScheduleClick={onScheduleClick} />
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
 

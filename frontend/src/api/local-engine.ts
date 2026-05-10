@@ -34,6 +34,23 @@ for (let n = 1; n <= 10; n++) {
   }
 }
 
+// 当前时间 → 节次映射
+function getCurrentPeriodSlots(): string[] {
+  const h = new Date().getHours();
+  const m = new Date().getMinutes();
+  const total = h * 60 + m;
+  if (total >= 8 * 60 + 0 && total < 9 * 60 + 35) return ["0102"];
+  if (total >= 9 * 60 + 35 && total < 9 * 60 + 50) return ["0102", "0304"]; // 课间
+  if (total >= 9 * 60 + 50 && total < 11 * 60 + 25) return ["0304"];
+  if (total >= 11 * 60 + 25 && total < 13 * 60 + 30) return []; // 午休
+  if (total >= 13 * 60 + 30 && total < 15 * 60 + 5) return ["0506"];
+  if (total >= 15 * 60 + 5 && total < 15 * 60 + 20) return ["0506", "0708"]; // 课间
+  if (total >= 15 * 60 + 20 && total < 16 * 60 + 55) return ["0708"];
+  if (total >= 16 * 60 + 55 && total < 18 * 60 + 30) return []; // 晚饭
+  if (total >= 18 * 60 + 30) return ["0910"];
+  return []; // 清晨/深夜
+}
+
 // ─── 数据 ───
 let _data: RoomSlot[] | null = null;
 
@@ -75,7 +92,14 @@ function parseIntent(text: string) {
   }
 
   // 节次
-  let periodSlots = ["0102", "0304", "0506", "0708", "0910"];
+  let periodSlots: string[];
+
+  // 如果包含"现在"，自动检测当前时段
+  if (text.includes("现在")) {
+    periodSlots = getCurrentPeriodSlots();
+  } else {
+    periodSlots = ["0102", "0304", "0506", "0708", "0910"];
+  }
 
   // ① 口语时段（上午/下午/晚上）
   for (const [kw, slots] of Object.entries(TIME_KEYWORDS)) {

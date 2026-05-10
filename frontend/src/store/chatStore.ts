@@ -53,14 +53,14 @@ function defaultSession(): ChatSession {
       {
         id: "welcome",
         type: "ai",
-        content: `# 山财空教室狙击手
+        content: `# 山财自习通
 
 用自然语言查询空教室，试试这样说：
 
+- 「现在有空教室吗」
 - 「下午舜耕有空教室吗」
-- 「燕山 3 号楼现在哪儿能自习」
-- 「章丘晚上能自习的地方」
-- 「明天上午有空教室吗」`,
+- 「章丘七号楼明天三四节」
+- 「燕山1号楼3楼现在能自习吗」`,
         timestamp: new Date(),
       },
     ],

@@ -98,6 +98,36 @@ export interface GroupedRoom {
   day_of_week: string;
 }
 
+/** 按楼栋分组 */
+export interface BuildingGroup {
+  building: string;
+  campus: string;
+  rooms: GroupedRoom[];
+}
+
+/** 从教室名提取楼栋名 */
+export function extractBuilding(roomName: string): string {
+  if (roomName.startsWith("实验楼")) return "实验楼";
+  if (roomName.startsWith("操场")) return "操场";
+  if (roomName.includes("-")) return roomName.split("-")[0] + "号楼";
+  if (/^\d{4}$/.test(roomName)) return roomName[0] + "号楼";
+  return roomName.slice(0, 2);
+}
+
+/** 将分组后的房间按楼栋二次分组 */
+export function groupByBuilding(groups: GroupedRoom[]): BuildingGroup[] {
+  const map = new Map<string, BuildingGroup>();
+  for (const room of groups) {
+    const bld = extractBuilding(room.room_name);
+    const key = `${room.campus}|${bld}`;
+    if (!map.has(key)) {
+      map.set(key, { building: bld, campus: room.campus, rooms: [] });
+    }
+    map.get(key)!.rooms.push(room);
+  }
+  return Array.from(map.values()).sort((a, b) => a.building.localeCompare(b.building));
+}
+
 /**
  * 将后端返回的 rooms 按 room_name 分组
  */
