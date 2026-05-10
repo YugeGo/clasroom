@@ -5,7 +5,6 @@ import { FC, useCallback, useRef, useEffect, useState } from "react";
 import { ChatBubble } from "./components/ChatBubble";
 import { ChatInput } from "./components/ChatInput";
 import { BrowsePanel } from "./components/BrowsePanel";
-import { QuickActions } from "./components/QuickActions";
 import { ScheduleModal } from "./components/ScheduleModal";
 import { useChatStore, useCurrentSession } from "./store/chatStore";
 import { groupRooms } from "./api/chat";
@@ -180,9 +179,8 @@ const App: FC = () => {
               </div>
             </div>
 
-            {/* 快捷查询 + 输入 */}
+            {/* 输入区域 */}
             <div className="shrink-0">
-              <QuickActions onSelect={handleSend} disabled={isStreaming} />
               <ChatInput onSend={handleSend} disabled={isStreaming} />
             </div>
           </>
