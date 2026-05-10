@@ -147,6 +147,14 @@ function parseIntent(text: string) {
     if (floorNum) floor = +floorNum[1];
   }
 
+  // 检测是否有任何有效查询意图
+  const hasIntent = campus || building || room || floor !== null ||
+    text.match(/[上中下晚]午|晚上|全天|节|点|星期|周[一二三四五六日]|今天|明天|后天|现在/) !== null;
+
+  if (!hasIntent) {
+    return null; // 纯闲聊，不是查询
+  }
+
   return { campus, building, room, floor, day_of_week: dayOfWeek, period_slots: periodSlots };
 }
 
@@ -232,6 +240,10 @@ function buildHierarchy(data: RoomSlot[]) {
 export async function localSendChatMessage(message: string) {
   const data = await loadData();
   const intent = parseIntent(message);
+
+  if (!intent) {
+    return { params: {}, count: 0, rooms: [], summary: null };
+  }
 
   const rooms = queryRooms(
     data, intent.campus, intent.day_of_week, intent.period_slots,
@@ -397,6 +409,10 @@ export async function localSendChatMessageAI(message: string) {
   // 回退到本地解析
   if (!intent) {
     intent = parseIntent(message);
+  }
+
+  if (!intent) {
+    return { params: {}, count: 0, rooms: [], summary: null };
   }
 
   const rooms = queryRooms(

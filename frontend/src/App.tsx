@@ -80,12 +80,21 @@ const App: FC = () => {
         const summary = `查询条件：${parts.join(" · ")} · ${data.count} 间空教室`;
 
         if (data.count === 0) {
-          const hint = params.room
-            ? `「${params.room}」在${params.day_of_week}没有空闲时段`
-            : params.building
-              ? `「${params.building}」当前时段没有空闲教室`
-              : "当前时段没有找到空教室，试试换个时间或校区？";
-          updateLastMessage({ type: "result", content: `${summary}\n\n${hint}`, groups: [] });
+          // 完全没识别到查询意图
+          if (data.count === 0 && !params.campus && !params.building && !params.room) {
+            updateLastMessage({
+              type: "result",
+              content: "我没理解你的意思 😅 试试这样说：\n「下午舜耕有空教室吗」\n「章丘七号楼明天三四节」\n「现在哪儿能自习」",
+              groups: [],
+            });
+          } else {
+            const hint = params.room
+              ? `「${params.room}」在${params.day_of_week}没有空闲时段`
+              : params.building
+                ? `「${params.building}」当前时段没有空闲教室`
+                : "当前时段没有找到空教室，试试换个时间或校区？";
+            updateLastMessage({ type: "result", content: `${summary}\n\n${hint}`, groups: [] });
+          }
         } else {
           // 有 AI 总结则显示
           const displayContent = data.summary ? `${summary}\n\n${data.summary}` : summary;
