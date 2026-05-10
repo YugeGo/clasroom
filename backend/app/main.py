@@ -9,6 +9,7 @@ from loguru import logger
 
 from app.api.browse import router as browse_router
 from app.api.chat import router as chat_router
+from app.api.rooms import router as rooms_router
 from app.api.query import router as query_router
 from app.api.sync import router as sync_router
 from app.config import settings
@@ -44,6 +45,7 @@ app.add_middleware(
 # 注册路由
 app.include_router(browse_router)
 app.include_router(chat_router)
+app.include_router(rooms_router)
 app.include_router(query_router)
 app.include_router(sync_router)
 
