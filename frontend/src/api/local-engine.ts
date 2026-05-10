@@ -76,10 +76,13 @@ function parseIntent(text: string) {
 
   // 节次
   let periodSlots = ["0102", "0304", "0506", "0708", "0910"];
+
+  // ① 口语时段（上午/下午/晚上）
   for (const [kw, slots] of Object.entries(TIME_KEYWORDS)) {
     if (text.includes(kw)) { periodSlots = slots; break; }
   }
 
+  // ② "第3-4节" 标准范围
   const rangeMatch = text.match(/第?(\d+)\s*[-–到至]\s*(\d+)\s*节/);
   if (rangeMatch) {
     const slots = new Set<string>();
@@ -89,6 +92,7 @@ function parseIntent(text: string) {
     if (slots.size) periodSlots = [...slots].sort();
   }
 
+  // ③ 中文数字节次（三四节、五到七节）
   const cnMatch = text.match(/第?([一二三四五六七八九十两])[、]?([到至]?)([一二三四五六七八九十两]?)\s*节/);
   if (cnMatch) {
     const s = CN_DIGITS[cnMatch[1]], e = CN_DIGITS[cnMatch[3] || cnMatch[1]];
@@ -99,6 +103,24 @@ function parseIntent(text: string) {
       }
       if (slots.size) periodSlots = [...slots].sort();
     }
+  }
+
+  // ④ "12节" = 第1-2节（相邻数字口语句式）
+  const adjacentMatch = text.match(/(?:第)?(\d)(\d)\s*节/);
+  if (adjacentMatch) {
+    const slots = new Set<string>();
+    // 个别数字如 "12节" → [1,2]，分别映射
+    for (let i = +adjacentMatch[1]; i <= +adjacentMatch[2]; i++) {
+      if (PERIOD_NUMS[String(i)]) slots.add(PERIOD_NUMS[String(i)]);
+    }
+    if (slots.size) periodSlots = [...slots].sort();
+  }
+
+  // ⑤ 阿拉伯数字节次 "3节" "4节"（单个数字）
+  const singleMatch = text.match(/(\d)\s*节/);
+  if (singleMatch && !adjacentMatch) {
+    const slot = PERIOD_NUMS[singleMatch[1]];
+    if (slot) periodSlots = [slot];
   }
 
   // 楼栋
@@ -116,7 +138,16 @@ function parseIntent(text: string) {
     if (numMatch) room = numMatch[1];
   }
 
-  return { campus, building, room, day_of_week: dayOfWeek, period_slots: periodSlots };
+  // 楼层（"三楼" "3楼"）
+  let floor: number | null = null;
+  const floorCN = text.match(/([一二三四五六七八九])楼/);
+  if (floorCN) floor = +CN_DIGITS[floorCN[1]];
+  else {
+    const floorNum = text.match(/(\d)\s*楼/);
+    if (floorNum) floor = +floorNum[1];
+  }
+
+  return { campus, building, room, floor, day_of_week: dayOfWeek, period_slots: periodSlots };
 }
 
 // ─── 查询 ───
@@ -128,6 +159,7 @@ function queryRooms(
   periodSlots: string[],
   building: string | null,
   room: string | null,
+  floor: number | null = null,
 ): RoomSlot[] {
   const bldNum = building ? building.match(/(\d+)号楼/)?.[1] : null;
 
@@ -148,6 +180,22 @@ function queryRooms(
     }
 
     if (room && r.room_name !== room) return false;
+
+    // 楼层筛选
+    if (floor !== null) {
+      const name = r.room_name;
+      let roomFloor: number | null = null;
+      if (name.includes("-")) {
+        // 章丘格式 "7-116" → 第2位数字是楼层
+        const afterHyphen = name.split("-")[1];
+        if (afterHyphen) roomFloor = +afterHyphen[0];
+      } else if (/^\d{4}$/.test(name)) {
+        // 舜耕/燕山格式 "3103" → 第2位数字是楼层
+        roomFloor = +name[1];
+      }
+      if (roomFloor !== null && roomFloor !== floor) return false;
+    }
+
     return true;
   });
 }
@@ -187,11 +235,12 @@ export async function localSendChatMessage(message: string) {
 
   const rooms = queryRooms(
     data, intent.campus, intent.day_of_week, intent.period_slots,
-    intent.building, intent.room,
+    intent.building, intent.room, intent.floor,
   );
 
   const params: Record<string, any> = {
     campus: intent.campus, building: intent.building, room: intent.room,
+    floor: intent.floor,
     day_of_week: intent.day_of_week, period_slots: intent.period_slots,
   };
   // 移除 null 字段
@@ -352,11 +401,12 @@ export async function localSendChatMessageAI(message: string) {
 
   const rooms = queryRooms(
     data, intent.campus, intent.day_of_week, intent.period_slots,
-    intent.building, intent.room,
+    intent.building, intent.room, intent.floor,
   );
 
   const params: Record<string, any> = {
     campus: intent.campus, building: intent.building, room: intent.room,
+    floor: intent.floor,
     day_of_week: intent.day_of_week, period_slots: intent.period_slots,
   };
   const cleanParams: Record<string, any> = {};
