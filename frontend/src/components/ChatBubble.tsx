@@ -8,9 +8,10 @@ import { RoomCard } from "./RoomCard";
 
 interface Props {
   message: ChatMessage;
+  onScheduleClick?: (roomName: string, campus: string) => void;
 }
 
-export const ChatBubble: FC<Props> = ({ message }) => {
+export const ChatBubble: FC<Props> = ({ message, onScheduleClick }) => {
   const { type, content, groups } = message;
 
   if (type === "user") {
@@ -58,7 +59,7 @@ export const ChatBubble: FC<Props> = ({ message }) => {
           {/* 教室卡片列表 */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
             {groups.map((room) => (
-              <RoomCard key={`${room.campus}-${room.room_name}`} room={room} />
+              <RoomCard key={`${room.campus}-${room.room_name}`} room={room} onScheduleClick={onScheduleClick} />
             ))}
           </div>
 

@@ -10,6 +10,10 @@ MOCK_MODE:
   当 config.MOCK_MODE = True 时，使用关键词匹配 + 内存数据模拟完整流程，
   无需 PostgreSQL 和 DeepSeek API，方便开发调试。
 """
+import json as _json
+import urllib.request as _req
+import urllib.error as _err
+
 from fastapi import APIRouter, Depends, HTTPException
 from loguru import logger
 from pydantic import BaseModel, Field
@@ -133,3 +137,77 @@ async def chat_query(
         count=len(rooms),
         rooms=rooms,
     )
+
+
+# ─── DeepSeek 代理（供前端本地开发用，生产环境走 Netlify Function） ───
+
+class DeepSeekRequest(BaseModel):
+    message: str
+    type: str = "parse"
+    context: str = ""
+
+
+@router.post("/deepseek")
+async def deepseek_proxy(request: DeepSeekRequest):
+    """
+    DeepSeek API 代理 — 本地开发时前端通过此接口调用 DeepSeek。
+    生产环境生产环境由 netlify/functions/deepseek-proxy.py 处理。
+    """
+    api_key = settings.LLM_API_KEY
+    if not api_key:
+        from app.ai.mock_intent import parse_mock_intent
+        from app.database.mock_data import mock_chat_response
+
+        if request.type == "parse":
+            intent = parse_mock_intent(request.message)
+            return {"intent": intent, "fallback": True}
+        return {"summary": None, "fallback": True}
+
+    # 构建 system prompt
+    now = datetime.now()
+    wd = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"]
+    ts = f"{now.year}年{now.month}月{now.day}日 {wd[now.weekday()]}"
+    slots_desc = "、".join(f"'{k}'={v}" for k, v in settings.SDUFE_PERIOD_SLOTS.items())
+
+    if request.type == "parse":
+        system = (
+            f"你是一个山财空教室意图解析器。当前系统时间：{ts}。"
+            "将用户的自然语言转化为 JSON。必须映射为山财的黑话：\n\n"
+            "* campus (string|null): 仅限 ['舜耕', '燕山', '章丘']"
+            "，未提则为 null。若用户说「圣井」，自动映射为「章丘」。\n"
+            "* day_of_week (string): 格式 '星期一'~'星期日'。\n"
+            "* period_slots (array): 可选值：" + slots_desc + "。"
+            "'上午'=['0102','0304']，'下午'=['0506','0708']。\n"
+        )
+        user = request.message
+    else:
+        system = "你是一个山财空教室助手。将查询结果用一段自然语言总结给用户。"
+        user = f"用户问题：{request.message}\n\n查询结果：{request.context}"
+
+    payload = _json.dumps({
+        "model": settings.LLM_MODEL,
+        "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}],
+        "response_format": {"type": "json_object" if request.type == "parse" else "text"},
+        "temperature": 0.1 if request.type == "parse" else 0.7,
+        "max_tokens": 512,
+    }).encode()
+
+    req = _req.Request(
+        f"{settings.LLM_BASE_URL}/chat/completions",
+        data=payload,
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        },
+    )
+
+    try:
+        resp = _req.urlopen(req, timeout=30)
+        result = _json.loads(resp.read())
+        content = result["choices"][0]["message"]["content"]
+
+        if request.type == "parse":
+            return {"intent": _json.loads(content)}
+        return {"summary": content}
+    except Exception as e:
+        return {"error": str(e), "fallback": True}

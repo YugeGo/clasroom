@@ -37,7 +37,7 @@ for (let n = 1; n <= 10; n++) {
 // ─── 数据 ───
 let _data: RoomSlot[] | null = null;
 
-async function loadData(): Promise<RoomSlot[]> {
+export async function loadData(): Promise<RoomSlot[]> {
   if (_data) return _data;
   const resp = await fetch("/sdufe_rooms.json");
   const raw: any[] = await resp.json();
@@ -236,4 +236,127 @@ export async function localFetchRooms(campus: string, building: string): Promise
   const data = await loadData();
   const h = buildHierarchy(data);
   return h[campus]?.[building] ?? [];
+}
+
+// ─── Phase 2: 教室周课表 ───
+
+export interface RoomSchedule {
+  room_name: string;
+  campus: string;
+  days: { day: string; slots: { slot: string; free: boolean }[] }[];
+}
+
+export function fetchRoomSchedule(data: RoomSlot[], roomName: string, campus: string): RoomSchedule {
+  const allSlots = ["0102", "0304", "0506", "0708", "0910"];
+  const freeSet = new Set<string>();
+
+  for (const r of data) {
+    if (r.room_name === roomName && r.campus === campus) {
+      freeSet.add(`${r.day_of_week}|${r.period_slot}`);
+    }
+  }
+
+  const days = WEEKDAY_CN.map((day) => ({
+    day,
+    slots: allSlots.map((slot) => ({
+      slot,
+      free: freeSet.has(`${day}|${slot}`),
+    })),
+  }));
+
+  return { room_name: roomName, campus, days };
+}
+
+// ─── Phase 1 & 4: DeepSeek AI ───
+
+let _aiAvailable: boolean | null = null;
+
+export async function isAIAvailable(): Promise<boolean> {
+  if (_aiAvailable !== null) return _aiAvailable;
+  try {
+    const resp = await fetch("/api/deepseek", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: "test", type: "parse" }),
+    });
+    const data = await resp.json();
+    _aiAvailable = !data.fallback;
+    return _aiAvailable;
+  } catch {
+    _aiAvailable = false;
+    return false;
+  }
+}
+
+export async function callDeepSeekParse(message: string): Promise<any | null> {
+  try {
+    const resp = await fetch("/api/deepseek", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, type: "parse" }),
+    });
+    const data = await resp.json();
+    if (data.fallback) return null;
+    return data.intent;
+  } catch {
+    return null;
+  }
+}
+
+export async function callDeepSeekSummary(message: string, context: string): Promise<string | null> {
+  try {
+    const resp = await fetch("/api/deepseek", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, type: "summarize", context }),
+    });
+    const data = await resp.json();
+    if (data.fallback || !data.summary) return null;
+    return data.summary;
+  } catch {
+    return null;
+  }
+}
+
+/** 尝试用 AI 解析，失败则回退到本地关键词 */
+export async function localSendChatMessageAI(message: string) {
+  const data = await loadData();
+
+  // 先尝试 AI 解析
+  let intent = await callDeepSeekParse(message);
+  // 回退到本地解析
+  if (!intent) {
+    intent = parseIntent(message);
+  }
+
+  const rooms = queryRooms(
+    data, intent.campus, intent.day_of_week, intent.period_slots,
+    intent.building, intent.room,
+  );
+
+  const params: Record<string, any> = {
+    campus: intent.campus, building: intent.building, room: intent.room,
+    day_of_week: intent.day_of_week, period_slots: intent.period_slots,
+  };
+  const cleanParams: Record<string, any> = {};
+  for (const [k, v] of Object.entries(params)) {
+    if (v !== null) cleanParams[k] = v;
+  }
+
+  // AI 总结
+  let summary: string | null = null;
+  if (rooms.length > 0 && intent.campus) {
+    const context = `在${intent.campus}找到${rooms.length}间空教室, 时段:${intent.period_slots?.join(",")}`;
+    summary = await callDeepSeekSummary(message, context);
+  }
+
+  return {
+    params: cleanParams,
+    count: rooms.length,
+    rooms: rooms.map((r) => ({
+      campus: r.campus, room_name: r.room_name,
+      day_of_week: r.day_of_week, period_slot: r.period_slot,
+    })),
+    summary,
+  };
 }

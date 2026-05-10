@@ -1,19 +1,24 @@
 /**
- * RoomCard — 空教室结果卡片（极客风）
+ * RoomCard — 空教室结果卡片
  * 展示教室名 + 校区 Tag + 空闲节次标签
+ * 点击卡片弹出周课表热力图
  */
 import { FC } from "react";
-import { Clock, MapPin } from "lucide-react";
+import { Clock, MapPin, CalendarDays } from "lucide-react";
 import type { GroupedRoom } from "../api/chat";
 import { CAMPUS_COLORS, PERIOD_TIME_LABELS, PERIOD_LABELS } from "../api/chat";
 
 interface Props {
   room: GroupedRoom;
+  onScheduleClick?: (roomName: string, campus: string) => void;
 }
 
-export const RoomCard: FC<Props> = ({ room }) => {
+export const RoomCard: FC<Props> = ({ room, onScheduleClick }) => {
   return (
-    <div className="group relative bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl p-4 hover:border-blue-400 dark:hover:border-zinc-700 hover:shadow-md dark:hover:shadow-sm hover:-translate-y-1 transition-all duration-300 shadow-sm dark:shadow-none">
+    <div
+      className="group relative bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-xl p-4 hover:border-blue-400 dark:hover:border-zinc-700 hover:shadow-md dark:hover:shadow-sm hover:-translate-y-1 transition-all duration-300 shadow-sm dark:shadow-none cursor-pointer"
+      onClick={() => onScheduleClick?.(room.room_name, room.campus)}
+    >
       {/* 第一行：校区 Tag + 教室名 */}
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2.5 min-w-0">
@@ -25,7 +30,10 @@ export const RoomCard: FC<Props> = ({ room }) => {
             {room.room_name}
           </span>
         </div>
-        <span className="text-xs text-gray-500 dark:text-zinc-500 font-medium transition-colors duration-300">{room.day_of_week}</span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-500 dark:text-zinc-500 font-medium transition-colors duration-300">{room.day_of_week}</span>
+          <CalendarDays size={14} className="text-gray-300 dark:text-zinc-600 group-hover:text-blue-400 dark:group-hover:text-zinc-400 transition-colors" />
+        </div>
       </div>
 
       {/* 第二行：空闲节次标签 */}
