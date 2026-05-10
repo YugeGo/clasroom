@@ -1,16 +1,9 @@
-# Netlify 部署配置 — 山财空教室 AI 狙击手
+# Netlify 部署配置 — 山财空教室 AI 狙击手（纯静态）
 [build]
   command = "cd frontend && npm run build"
   publish = "frontend/dist"
-  functions = "netlify/functions"
 
-# DeepSeek AI 代理
-[[redirects]]
-  from = "/api/deepseek"
-  to = "/.netlify/functions/deepseek-proxy"
-  status = 200
-
-# SPA 路由（放在最后）
+# SPA 路由支持
 [[redirects]]
   from = "/*"
   to = "/index.html"

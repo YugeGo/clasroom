@@ -269,55 +269,80 @@ export function fetchRoomSchedule(data: RoomSlot[], roomName: string, campus: st
   return { room_name: roomName, campus, days };
 }
 
-// ─── Phase 1 & 4: DeepSeek AI ───
+// ─── Phase 1 & 4: DeepSeek AI（浏览器直连，无需后端） ───
 
-let _aiAvailable: boolean | null = null;
+const DEEPSEEK_API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY as string | undefined;
+const _aiAvailable = !!DEEPSEEK_API_KEY;
 
-export async function isAIAvailable(): Promise<boolean> {
-  if (_aiAvailable !== null) return _aiAvailable;
+const AI_SYSTEM_PROMPT = () => {
+  const now = new Date();
+  const wd = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"];
+  const ts = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDay()}日 ${wd[now.getDay()]}`;
+  const slots = Object.entries({
+    "0102": "第1-2节 (08:00-09:35)", "0304": "第3-4节 (09:50-11:25)",
+    "0506": "第5-6节 (13:30-15:05)", "0708": "第7-8节 (15:20-16:55)",
+    "0910": "第9-10节 (18:30-20:05)",
+  }).map(([k, v]) => `'${k}'=${v}`).join("、");
+
+  return `你是一个山财空教室意图解析器。当前系统时间：${ts}。将用户的自然语言转化为 JSON。必须映射为山财的黑话：
+* campus (string|null): 仅限 ['舜耕', '燕山', '章丘']，未提则为 null。若用户说「圣井」，自动映射为「章丘」。
+* day_of_week (string): 格式 '星期一'~'星期日'。如用户说「明天」，根据当前时间推算。
+* period_slots (array): 可选值：${slots}。'上午'=['0102','0304']，'下午'=['0506','0708']，'晚上'=['0910']。
+请只输出 JSON。`;
+};
+
+export function isAIAvailable(): boolean {
+  return _aiAvailable;
+}
+
+async function callDeepSeekDirect(messages: { role: string; content: string }[], jsonMode: boolean): Promise<string | null> {
+  if (!DEEPSEEK_API_KEY) return null;
   try {
-    const resp = await fetch("/api/deepseek", {
+    const resp = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: "test", type: "parse" }),
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${DEEPSEEK_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: "deepseek-chat",
+        messages,
+        response_format: jsonMode ? { type: "json_object" } : undefined,
+        temperature: jsonMode ? 0.1 : 0.7,
+        max_tokens: 512,
+      }),
     });
     const data = await resp.json();
-    _aiAvailable = !data.fallback;
-    return _aiAvailable;
+    return data.choices?.[0]?.message?.content ?? null;
   } catch {
-    _aiAvailable = false;
-    return false;
+    return null;
   }
 }
 
 export async function callDeepSeekParse(message: string): Promise<any | null> {
+  const content = await callDeepSeekDirect(
+    [
+      { role: "system", content: AI_SYSTEM_PROMPT() },
+      { role: "user", content: message },
+    ],
+    true,
+  );
+  if (!content) return null;
   try {
-    const resp = await fetch("/api/deepseek", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message, type: "parse" }),
-    });
-    const data = await resp.json();
-    if (data.fallback) return null;
-    return data.intent;
+    return JSON.parse(content);
   } catch {
     return null;
   }
 }
 
 export async function callDeepSeekSummary(message: string, context: string): Promise<string | null> {
-  try {
-    const resp = await fetch("/api/deepseek", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message, type: "summarize", context }),
-    });
-    const data = await resp.json();
-    if (data.fallback || !data.summary) return null;
-    return data.summary;
-  } catch {
-    return null;
-  }
+  return callDeepSeekDirect(
+    [
+      { role: "system", content: "你是一个山财空教室助手。用一段自然语言总结查询结果，要友好简洁有温度。" },
+      { role: "user", content: `用户问题：${message}\n\n查询结果：${context}` },
+    ],
+    false,
+  );
 }
 
 /** 尝试用 AI 解析，失败则回退到本地关键词 */
