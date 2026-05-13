@@ -29,6 +29,7 @@ export const BrowsePanel: FC<Props> = ({ onQueryResult, onScheduleClick }) => {
   const [rooms, setRooms] = useState<string[]>([]);
   const [selectedCampus, setSelectedCampus] = useState<string>("");
   const [selectedBuilding, setSelectedBuilding] = useState<string>("");
+  const [selectedBuildingDisplay, setSelectedBuildingDisplay] = useState<string>("");
   const [selectedRoom, setSelectedRoom] = useState<string>("");
   const [selectedDay, setSelectedDay] = useState<string>("");
   const [loading, setLoading] = useState(false);
@@ -53,7 +54,7 @@ export const BrowsePanel: FC<Props> = ({ onQueryResult, onScheduleClick }) => {
     setLoading(true);
     const blds = await localFetchBuildings(name);
     setBuildings(blds);
-    setSelectedBuilding("");
+    setSelectedBuilding(""); setSelectedBuildingDisplay("");
     setSelectedRoom("");
     setStep("building");
     setLoading(false);
@@ -61,6 +62,9 @@ export const BrowsePanel: FC<Props> = ({ onQueryResult, onScheduleClick }) => {
 
   const handleBuildingClick = useCallback(async (name: string) => {
     setSelectedBuilding(name);
+    // 保存显示名以便在界面中使用
+    const bld = buildings.find((b) => b.name === name);
+    setSelectedBuildingDisplay(bld?.display_name || name);
     setLoading(true);
     const rms = await localFetchRooms(selectedCampus, name);
     setRooms(rms);
@@ -100,7 +104,7 @@ export const BrowsePanel: FC<Props> = ({ onQueryResult, onScheduleClick }) => {
   const reset = useCallback(() => {
     setStep("campus");
     setSelectedCampus("");
-    setSelectedBuilding("");
+    setSelectedBuilding(""); setSelectedBuildingDisplay("");
     setSelectedRoom("");
   }, []);
 
@@ -112,13 +116,13 @@ export const BrowsePanel: FC<Props> = ({ onQueryResult, onScheduleClick }) => {
         {selectedCampus && (
           <>
             <ChevronRight size={14} className="opacity-50" />
-            <button onClick={() => { setStep("building"); setSelectedBuilding(""); }} className="hover:text-gray-900 dark:hover:text-zinc-300 transition-colors">{selectedCampus}</button>
+            <button onClick={() => { setStep("building"); setSelectedBuilding(""); setSelectedBuildingDisplay(""); }} className="hover:text-gray-900 dark:hover:text-zinc-300 transition-colors">{selectedCampus}</button>
           </>
         )}
         {selectedBuilding && (
           <>
             <ChevronRight size={14} className="opacity-50" />
-            <button onClick={() => setStep("room")} className="hover:text-gray-900 dark:hover:text-zinc-300 transition-colors">{selectedBuilding}</button>
+            <button onClick={() => setStep("room")} className="hover:text-gray-900 dark:hover:text-zinc-300 transition-colors">{selectedBuildingDisplay}</button>
           </>
         )}
       </div>
@@ -176,7 +180,7 @@ export const BrowsePanel: FC<Props> = ({ onQueryResult, onScheduleClick }) => {
       {step === "room" && (
         <div className="space-y-4 animate-fade-in">
           <p className="text-xs text-gray-400 dark:text-zinc-500 font-medium uppercase tracking-wider transition-colors duration-300">
-            {selectedCampus} · {selectedBuilding} · 选择教室与时间
+            {selectedCampus} · {selectedBuildingDisplay} · 选择教室与时间
           </p>
 
           {/* 星期选择 */}

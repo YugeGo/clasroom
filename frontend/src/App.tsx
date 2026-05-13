@@ -7,6 +7,7 @@ import { ChatInput } from "./components/ChatInput";
 import { BrowsePanel } from "./components/BrowsePanel";
 import { ScheduleModal } from "./components/ScheduleModal";
 import { NowDrawer } from "./components/NowDrawer";
+import { UsageGuide } from "./components/UsageGuide";
 import { useChatStore, useCurrentSession } from "./store/chatStore";
 import { groupRooms } from "./api/chat";
 import { localSendChatMessageAI } from "./api/local-engine";
@@ -16,6 +17,7 @@ type Mode = "chat" | "browse";
 
 const App: FC = () => {
   const [mode, setMode] = useState<Mode>("chat");
+  const [showGuide, setShowGuide] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">(() => {
     if (typeof localStorage !== "undefined" && localStorage.getItem("theme")) {
       return localStorage.getItem("theme") as "light" | "dark";
@@ -164,8 +166,15 @@ const App: FC = () => {
             </button>
           </div>
 
-          {/* 主题切换 */}
-          <div className="flex items-center ml-4">
+          {/* 右侧：帮助 + 主题 */}
+          <div className="flex items-center gap-1 ml-4">
+            <button
+              onClick={() => setShowGuide(true)}
+              className="p-2 rounded-lg bg-gray-100 dark:bg-zinc-800/50 text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200 hover:bg-gray-200 dark:hover:bg-zinc-700/50 transition-all duration-200 shadow-sm dark:shadow-none"
+              title="使用说明"
+            >
+              <span className="text-base leading-none">?</span>
+            </button>
             <button
               onClick={toggleTheme}
               className="p-2 rounded-lg bg-gray-100 dark:bg-zinc-800/50 text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200 hover:bg-gray-200 dark:hover:bg-zinc-700/50 transition-all duration-200 shadow-sm dark:shadow-none"
@@ -227,6 +236,11 @@ const App: FC = () => {
       {/* 现在有空抽屉 */}
       {showNowDrawer && (
         <NowDrawer onClose={() => setShowNowDrawer(false)} />
+      )}
+
+      {/* 使用说明 */}
+      {showGuide && (
+        <UsageGuide onClose={() => setShowGuide(false)} />
       )}
     </div>
   );
